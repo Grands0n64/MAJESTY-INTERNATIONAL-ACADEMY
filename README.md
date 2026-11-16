@@ -1,28 +1,23 @@
 # Majesty International Academy
 
-Responsive website foundation for an AI-powered learning platform serving Nigerian secondary-school and university students.
+**Excellence Without Limits.**
 
-## Included
-- Premium responsive homepage and mobile navigation
-- Junior Secondary (JSS 1–3), Senior Secondary (SS 1–3), and University (100–400 level) pathways
-- Daily 9 AM–1 PM timetable preview with break time
-- AI learning, assignment, voice and image-upload feature descriptions
-- WAEC, NECO, JAMB and Common Entrance preparation section
-- Student dashboard preview with sample timetable, assignments and progress
+A responsive front-end foundation and backend scaffold for a digital academy serving:
+- Junior Secondary: JSS 1–3
+- Senior Secondary: SS 1–3
+- University: 100–400 Level
 
-## Run
-Open `index.html` in a browser or serve this folder with any static web server. No build step is required.
+## Website
+- `index.html`: public homepage
+- `portal.html`: student learning portal
+- `curriculum.js`: secondary curriculum starter and sample university course catalogue
+- `portal.js` / `portal-auth.js`: student portal interactions and Supabase authentication / AI tutor integration
+- `styles.css` / `portal.css`: responsive styling
 
-## Important
-This is the front-end foundation, not a complete live school platform. Authentication, student records, database, AI tutoring and marking, voice generation, uploads, course catalogue management, examination security and defence scheduling require secure backend services and integrations. Dashboard figures are sample data.
+## Backend
+Supabase schema, row-level security, private student uploads and Edge Functions are in `supabase/`. Read [backend setup instructions](backend/README.md) before configuring the project.
 
-## Next stages
-1. Authentication, student profiles and role-based admin access.
-2. Curriculum database for JSS, SS and university faculties/departments/courses.
-3. Timetable, attendance, assignment and assessment services.
-4. Secure AI tutoring and marking with assignment integrity rules.
-5. Audio lessons, image/document uploads and examination question banks.
-6. University oral defence scheduling and assessment records.
-7. Privacy, safeguarding, accessibility and examination review workflows.
+## Important status
+The repository contains source code, not a live configured school service. A Supabase project, database migration, Edge Function deployment and API secrets are still required to activate accounts and live AI. Assignment and academic record screens still include local demo behaviour. Do not use real student data until privacy, safeguarding, security, backups and staff access are configured.
 
-**Motto:** Excellence Without Limits.
+The AI assignment feedback endpoint is provisional; teachers must approve official grades.
