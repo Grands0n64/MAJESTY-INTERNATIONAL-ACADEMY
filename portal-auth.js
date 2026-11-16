@@ -1,5 +1,5 @@
 (()=>{"use strict";
-const $=id=>document.getElementById(id),status=$("auth-status"),signin=$("auth-signin"),signup=$("auth-signup"),signout=$("auth-signout");
+const $=id=>document.getElementById(id),status=$("auth-status"),signin=$("auth-signin"),signup=$("auth-signup"),signout=$("auth-signout"),google=$("auth-google");
 const url=window.MAJESTY_SUPABASE_URL,key=window.MAJESTY_SUPABASE_ANON_KEY;let client=null,session=null;
 function say(m){status.textContent=m}
 function configured(){return url&&key&&!url.includes("YOUR_PROJECT")&&!key.includes("YOUR_SUPABASE")}
@@ -19,11 +19,12 @@ async function loadProfile(s){
 }
 function setSession(s){
   session=s;const active=!!s;
-  signin.classList.toggle("hidden",active);signup.classList.toggle("hidden",active);signout.classList.toggle("hidden",!active);
+  signin.classList.toggle("hidden",active);signup.classList.toggle("hidden",active);google.classList.toggle("hidden",active);signout.classList.toggle("hidden",!active);
   ["auth-email","auth-password","auth-name","auth-level"].forEach(id=>$(id).classList.toggle("hidden",active));
   if(active){say("Signed in as "+(s.user.email||"student")+". Your secure student account is connected.");$("student-label").textContent=(s.user.email||"Student")+" · secure account";Promise.resolve().then(()=>loadProfile(s))}
   else if(client){say("You are signed out. Sign in to use your student account and live AI tutor.");$("student-label").textContent="Student workspace"}
 }
+google.onclick=async()=>{if(!client)return say("Supabase is not configured.");const {error}=await client.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname}});if(error)say(error.message)};
 signin.onclick=async()=>{
   if(!client)return say("Supabase is not configured. Check supabase-config.js.");
   const email=$("auth-email").value.trim(),password=$("auth-password").value;
