@@ -6,7 +6,12 @@ Deno.serve(async req=>{
   if(req.method!=="POST") return json(405,{error:"Method not allowed"});
   const auth=req.headers.get("Authorization");
   if(!auth?.startsWith("Bearer ")) return json(401,{error:"Sign in is required."});
-  const url=Deno.env.get("SUPABASE_URL"), key=Deno.env.get("SUPABASE_ANON_KEY"), serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), aiKey=Deno.env.get("OPENAI_API_KEY");
+  const url=Deno.env.get("SUPABASE_URL");
+  const publishableKeys=Deno.env.get("SUPABASE_PUBLISHABLE_KEYS");
+  const secretKeys=Deno.env.get("SUPABASE_SECRET_KEYS");
+  const key=publishableKeys?JSON.parse(publishableKeys).default:Deno.env.get("SUPABASE_ANON_KEY");
+  const serviceKey=secretKeys?JSON.parse(secretKeys).default:Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const aiKey=Deno.env.get("OPENAI_API_KEY");
   if(!url||!key||!serviceKey||!aiKey) return json(503,{error:"Backend secrets are not configured."});
   const sb=createClient(url,key,{global:{headers:{Authorization:auth}}});
   const admin=createClient(url,serviceKey);
