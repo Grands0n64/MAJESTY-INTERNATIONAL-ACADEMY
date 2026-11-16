@@ -123,7 +123,21 @@ alter table public.attendance enable row level security;
 alter table public.defences enable row level security;
 
 create policy "Profiles view own or staff" on public.profiles for select to authenticated using (id = auth.uid() or public.is_staff());
-create policy "Students update own basic profile" on public.profiles for update to authenticated using (id = auth.uid()) with check (id = auth.uid() and role = (select p.role from public.profiles p where p.id = auth.uid()));
+create policy "Students update own basic profile" on public.profiles for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
+
+create or replace function public.prevent_role_escalation()
+returns trigger language plpgsql security definer set search_path = public
+as $role_guard$
+begin
+  if new.role is distinct from old.role and not public.is_admin() then
+    raise exception 'Only an administrator may change account roles';
+  end if;
+  return new;
+end;
+$role_guard$;
+drop trigger if exists protect_profile_role on public.profiles;
+create trigger protect_profile_role before update on public.profiles
+for each row execute procedure public.prevent_role_escalation();
 create policy "Admins manage profiles" on public.profiles for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 create policy "Authenticated users view active courses" on public.courses for select to authenticated using (active or public.is_staff());
