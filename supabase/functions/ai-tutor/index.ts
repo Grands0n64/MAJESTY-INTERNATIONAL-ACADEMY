@@ -6,7 +6,6 @@ const cors = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Content-Type": "application/json",
 };
-
 const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
 
@@ -20,8 +19,8 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const publishableKeys = Deno.env.get("SUPABASE_PUBLISHABLE_KEYS");
   const anonKey = publishableKeys ? JSON.parse(publishableKeys).default : Deno.env.get("SUPABASE_ANON_KEY");
-  const openaiKey = Deno.env.get("OPENAI_API_KEY");
-  if (!supabaseUrl || !anonKey || !openaiKey) return reply(503, { error: "Backend secrets are not configured." });
+  const geminiKey = Deno.env.get("GEMINI_API_KEY");
+  if (!supabaseUrl || !anonKey || !geminiKey) return reply(503, { error: "Backend secrets are not configured." });
 
   const supabase = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authorization } } });
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -34,7 +33,7 @@ Deno.serve(async (req) => {
   const level = typeof body.level === "string" ? body.level.trim().slice(0, 40) : "student";
   if (!question || question.length > 4000) return reply(400, { error: "Enter a question of up to 4,000 characters." });
 
-  const model = Deno.env.get("OPENAI_MODEL") ?? "gpt-6-luna";
+  const model = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.8-flash";
   const prompt = [
     "You are a patient, encouraging teacher at Majesty International Academy.",
     "Teach the learner; do not merely give answers. Explain step by step, define important terms, include a relevant example, then finish with one short check-for-understanding question.",
@@ -45,22 +44,19 @@ Deno.serve(async (req) => {
     `Learner question: ${question}`,
   ].join("\n\n");
 
-  const ai = await fetch("https://api.openai.com/v1/responses", {
+  const ai = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
-    headers: { "Authorization": `Bearer ${openaiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model, input: prompt, max_output_tokens: 900 }),
+    headers: { "x-goog-api-key": geminiKey, "Content-Type": "application/json" },
+    body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 900 } }),
   });
   if (!ai.ok) {
     const detail = await ai.text();
-    console.error("OpenAI request failed", ai.status, detail.slice(0, 500));
-    return reply(502, { error: "The tutor service is temporarily unavailable." });
+    console.error("Gemini request failed", ai.status, detail.slice(0, 500));
+    return reply(502, { error: "The tutor service is temporarily unavailable. Check the Gemini model and API quota." });
   }
   const result = await ai.json();
-  const answer = (result.output ?? [])
-    .filter((item: any) => item.type === "message")
-    .flatMap((item: any) => item.content ?? [])
-    .filter((part: any) => part.type === "output_text")
-    .map((part: any) => part.text)
+  const answer = (result.candidates?.[0]?.content?.parts ?? [])
+    .map((part: any) => typeof part.text === "string" ? part.text : "")
     .join("\n").trim();
   if (!answer) return reply(502, { error: "The tutor could not prepare an answer. Please try again." });
 
