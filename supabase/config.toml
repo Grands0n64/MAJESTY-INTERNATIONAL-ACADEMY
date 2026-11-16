@@ -1,0 +1,7 @@
+project_id = "majesty-international-academy"
+
+[functions.ai-tutor]
+verify_jwt = true
+
+[functions.review-submission]
+verify_jwt = true
