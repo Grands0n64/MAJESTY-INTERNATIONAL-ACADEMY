@@ -18,7 +18,8 @@ Deno.serve(async (req) => {
   if (!authorization?.startsWith("Bearer ")) return reply(401, { error: "Sign in is required." });
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const publishableKeys = Deno.env.get("SUPABASE_PUBLISHABLE_KEYS");
+  const anonKey = publishableKeys ? JSON.parse(publishableKeys).default : Deno.env.get("SUPABASE_ANON_KEY");
   const openaiKey = Deno.env.get("OPENAI_API_KEY");
   if (!supabaseUrl || !anonKey || !openaiKey) return reply(503, { error: "Backend secrets are not configured." });
 
