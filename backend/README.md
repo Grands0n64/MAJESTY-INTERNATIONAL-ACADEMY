@@ -12,6 +12,7 @@ Edit `supabase-config.js` and replace the two placeholders with the Supabase Pro
 Set these in Supabase Edge Function secrets:
 - `OPENAI_API_KEY`: your server-side OpenAI API key
 - `OPENAI_MODEL`: optional; defaults to `gpt-6-luna`
+- `SUPABASE_SERVICE_ROLE_KEY`: server-side only; required by the assignment-review function to securely save AI feedback after verifying the student's session
 - `ALLOWED_ORIGIN`: your deployed school website origin
 
 Supabase supplies `SUPABASE_URL` and `SUPABASE_ANON_KEY` to Edge Functions.
