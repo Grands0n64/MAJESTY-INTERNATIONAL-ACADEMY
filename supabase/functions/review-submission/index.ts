@@ -6,9 +6,10 @@ Deno.serve(async req=>{
   if(req.method!=="POST") return json(405,{error:"Method not allowed"});
   const auth=req.headers.get("Authorization");
   if(!auth?.startsWith("Bearer ")) return json(401,{error:"Sign in is required."});
-  const url=Deno.env.get("SUPABASE_URL"), key=Deno.env.get("SUPABASE_ANON_KEY"), aiKey=Deno.env.get("OPENAI_API_KEY");
-  if(!url||!key||!aiKey) return json(503,{error:"Backend secrets are not configured."});
+  const url=Deno.env.get("SUPABASE_URL"), key=Deno.env.get("SUPABASE_ANON_KEY"), serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), aiKey=Deno.env.get("OPENAI_API_KEY");
+  if(!url||!key||!serviceKey||!aiKey) return json(503,{error:"Backend secrets are not configured."});
   const sb=createClient(url,key,{global:{headers:{Authorization:auth}}});
+  const admin=createClient(url,serviceKey);
   const {data:{user}}=await sb.auth.getUser();
   if(!user) return json(401,{error:"Invalid session."});
   let body:any; try{body=await req.json()}catch{return json(400,{error:"Invalid request."})}
@@ -24,7 +25,7 @@ Deno.serve(async req=>{
   const result=await response.json();
   const feedback=(result.output??[]).filter((x:any)=>x.type==="message").flatMap((x:any)=>x.content??[]).filter((x:any)=>x.type==="output_text").map((x:any)=>x.text).join("\n").trim();
   const {data:profile}=await sb.from("profiles").select("role").eq("id",user.id).single();
-  const {data:submission,error:saveError}=await sb.from("submissions").upsert({assignment_id:assignment.id,student_id:user.id,answer:body.answer,ai_feedback:feedback,status:"ai_reviewed"},{onConflict:"assignment_id,student_id"}).select("id,status").single();
+  const {data:submission,error:saveError}=await admin.from("submissions").upsert({assignment_id:assignment.id,student_id:user.id,answer:body.answer,ai_feedback:feedback,status:"ai_reviewed"},{onConflict:"assignment_id,student_id"}).select("id,status").single();
   if(saveError){console.error(saveError);return json(500,{error:"Could not save the submission."})}
   return json(200,{submission,feedback,official_score:null,note:"AI feedback is provisional. A teacher must review and enter the official score."});
 });
