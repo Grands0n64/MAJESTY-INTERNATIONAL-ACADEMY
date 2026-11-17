@@ -50,3 +50,4 @@ drop policy if exists "Students create own defence sessions" on public.defence_s
 create policy "Students create own defence sessions" on public.defence_sessions for insert to authenticated with check(student_id=auth.uid() and exists(select 1 from public.university_defences d where d.id=defence_id and d.student_id=auth.uid()));
 drop policy if exists "Students update own defence sessions" on public.defence_sessions;
 create policy "Students update own defence sessions" on public.defence_sessions for update to authenticated using(student_id=auth.uid() or public.is_staff()) with check(student_id=auth.uid() or public.is_staff());
+\n-- Permit students to submit their own project for staff scheduling.\ndrop policy if exists "Students register own project defence" on public.university_defences;\ncreate policy "Students register own project defence" on public.university_defences for insert to authenticated with check(student_id=auth.uid());\n
