@@ -54,3 +54,5 @@
 #ai-classroom-root .consent input{width:auto}
 #ai-classroom-root .answerbox{overflow-wrap:anywhere}
 @media(max-width:620px){#ai-classroom-root .classroom-controls{grid-template-columns:1fr}#ai-classroom-root .teacher-stage{align-items:flex-start;flex-direction:column}#ai-classroom-root .teacher-speech{font-size:15px}}
+
+.exam-ai-panel{border-top:1px solid #e4eaf1;margin-top:20px;padding-top:18px}.exam-ai-panel textarea{margin:10px 0}.consent{display:block;font-size:12px;line-height:1.6;margin:12px 0}.consent input{width:auto}
