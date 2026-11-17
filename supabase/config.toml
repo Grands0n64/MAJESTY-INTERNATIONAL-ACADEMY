@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.review-submission]
 verify_jwt = true
+
+[functions.live-video-teacher]
+verify_jwt = true
