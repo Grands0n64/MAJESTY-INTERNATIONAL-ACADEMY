@@ -25,6 +25,36 @@ function render(){
  const face=make("div",{class:"teacher-avatar","aria-label":"Animated AI teacher"});face.append(make("div",{class:"teacher-hair"}),make("div",{class:"teacher-eyes"}),make("div",{class:"teacher-mouth"}));
  const speech=make("div",{class:"teacher-speech",id:"teacher-status"},"Hello! I'm your Majesty Academy AI teacher. Choose a topic and let's begin.");
  avatar.append(face,speech);
+ const liveBox=make("div",{class:"live-teacher-box"});
+ const liveHeading=make("h3",{},"Live video teacher");
+ const liveInfo=make("p",{class:"muted"},"Start a real-time video conversation with your AI teacher. Allow microphone access when your browser asks.");
+ const liveFrame=make("div",{class:"live-teacher-frame",id:"live-teacher-frame"});liveFrame.append(make("div",{class:"live-teacher-placeholder"},"Your live AI teacher will appear here when the session starts."));
+ const liveStatus=make("p",{class:"muted",id:"live-teacher-status"},"Live video is ready to connect.");
+ let liveConversationId=null;
+ const startLive=button("Start live video lesson",async()=>{
+  startLive.disabled=true;liveStatus.textContent="Connecting to your live AI teacher...";
+  try{
+   const auth=window.MAJESTY_AUTH;if(!auth?.client||!auth.session)throw Error("Sign in before starting a live lesson.");
+   const {data,error}=await auth.client.functions.invoke("live-video-teacher",{body:{action:"start",level:level.value,subject:subject.value,topic:topic.value}});
+   if(error){let message=error.message||"Could not start the live video session.";try{if(error.context?.json){const payload=await error.context.json();message=payload.error||message;}}catch{}throw Error(message);}
+   if(!data?.conversation_url)throw Error(data?.error||"The video provider did not return a room URL.");
+   liveConversationId=data.conversation_id||null;
+   liveFrame.innerHTML="";
+   const frame=make("iframe",{src:data.conversation_url,title:"Majesty AI live video teacher",allow:"camera; microphone; fullscreen; display-capture; autoplay",referrerpolicy:"strict-origin-when-cross-origin"});
+   frame.style.width="100%";frame.style.height="min(70vh,620px)";frame.style.minHeight="420px";frame.style.border="0";frame.style.borderRadius="14px";
+   liveFrame.append(frame);liveStatus.textContent="Live teacher connected. Speak naturally and ask questions during the lesson.";
+   startLive.classList.add("hidden");endLive.classList.remove("hidden");
+  }catch(e){liveStatus.textContent=e.message||"Live video could not start.";startLive.disabled=false;}
+ });
+ const endLive=button("End live lesson",async()=>{
+  endLive.disabled=true;liveStatus.textContent="Ending live lesson...";
+  try{const auth=window.MAJESTY_AUTH;if(liveConversationId&&auth?.client){const {error}=await auth.client.functions.invoke("live-video-teacher",{body:{action:"end",conversation_id:liveConversationId}});if(error)throw error;}
+   liveConversationId=null;liveFrame.innerHTML="";liveFrame.append(make("div",{class:"live-teacher-placeholder"},"Your live AI teacher will appear here when the session starts."));
+   endLive.classList.add("hidden");startLive.classList.remove("hidden");startLive.disabled=false;liveStatus.textContent="Live lesson ended.";
+  }catch(e){liveStatus.textContent=e.message||"Could not end the session."; }finally{endLive.disabled=false;}
+ },"secondary");
+ endLive.classList.add("hidden");
+ liveBox.append(liveHeading,liveInfo,liveFrame,startLive,endLive,liveStatus);
  const actions=make("div",{class:"teacher-actions"});
  const teach=button("Teach this topic",teachTopic);
  const speak=button("🔊 Read lesson aloud",speakLesson,"secondary");
@@ -46,7 +76,7 @@ function render(){
  const consent=make("label",{class:"consent"});const check=make("input",{type:"checkbox",id:"integrity-consent"});consent.append(check,document.createTextNode(" I understand and consent to browser activity monitoring during this practice exam."));
  const start=button("Start monitored practice",startMonitor);const end=button("End monitoring",endMonitor,"secondary");const log=make("div",{id:"integrity-log",class:"answerbox"},"Monitoring is off.");
  integrity.append(consent,start,end,log);
- panel.append(intro,controls,avatar,actions,make("h3",{},"Your lesson notes — read and copy"),lesson,copyNotes,make("h3",{},"Ask your teacher"),question,ask,assignment,integrity);
+ panel.append(intro,controls,liveBox,avatar,actions,make("h3",{},"Your lesson notes — read and copy"),lesson,copyNotes,make("h3",{},"Ask your teacher"),question,ask,assignment,integrity);
  root.append(panel);
  function fillSubjects(){subject.innerHTML="";subjectsFor(level.value).forEach(s=>subject.append(make("option",{value:s},s)));if(!subject.options.length)subject.append(make("option",{value:""}, "No subjects found"));if(state.subject&&[...subject.options].some(o=>o.value===state.subject))subject.value=state.subject;fillTopics()}
  function fillTopics(){topic.innerHTML="";topicsFor(subject.value).forEach((t,i)=>topic.append(make("option",{value:t},(i+1)+". "+t)));if(state.topic&&[...topic.options].some(o=>o.value===state.topic))topic.value=state.topic;state.subject=subject.value;state.topic=topic.value;save()}
