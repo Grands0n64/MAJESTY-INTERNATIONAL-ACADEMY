@@ -11,3 +11,23 @@
 .authfields .secondary{background:#526783}
 .authfields .hidden{display:none!important}
 @media(max-width:650px){.topright{gap:9px}.account-link{padding:9px;font-size:10px}.authfields{display:grid;grid-template-columns:1fr}.authfields input,.authfields select,.authfields button{width:100%}}
+
+/* Interactive AI classroom */
+.ai-classroom{border-top:4px solid #c9a45c}
+.classroom-controls{display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:10px;margin:18px 0}
+.classroom-controls select{width:100%;min-width:0}
+.teacher-stage{display:flex;align-items:center;gap:20px;background:linear-gradient(120deg,#102b55,#234876);color:white;border-radius:9px;padding:22px;margin:18px 0}
+.teacher-avatar{width:104px;height:104px;flex:0 0 104px;border-radius:50%;background:#e9c6a3;position:relative;border:5px solid #c9a45c;overflow:hidden}
+.teacher-hair{position:absolute;left:13px;top:3px;width:70px;height:38px;background:#34251f;border-radius:50% 50% 20% 20%}
+.teacher-eyes{position:absolute;left:27px;top:45px;width:9px;height:5px;background:#26364a;border-radius:50%;box-shadow:32px 0 #26364a}
+.teacher-mouth{position:absolute;left:42px;top:69px;width:17px;height:5px;background:#8b3f45;border-radius:0 0 12px 12px}
+.teacher-avatar.speaking .teacher-mouth{animation:teacher-talk .22s infinite alternate}
+.teacher-speech{font-size:13px;line-height:1.7}
+.teacher-actions{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0 20px}
+.teacher-actions .secondary{margin:0!important}
+.class-assignment,.integrity-panel{border-top:1px solid #e8edf3;margin-top:24px;padding-top:16px}
+.class-assignment h3,.integrity-panel h3,.ai-classroom>h3{font:18px Georgia;color:#102b55}
+.consent{display:block;font-size:12px;line-height:1.7;margin:12px 0}
+#class-question,#class-answer{width:100%;margin:8px 0}
+@keyframes teacher-talk{from{height:3px;transform:scaleX(.8)}to{height:12px;transform:scaleX(1.1)}}
+@media(max-width:650px){.classroom-controls{grid-template-columns:1fr}.teacher-stage{align-items:flex-start;padding:15px;gap:12px}.teacher-avatar{width:78px;height:78px;flex-basis:78px}.teacher-hair{left:9px;width:52px}.teacher-eyes{left:20px;box-shadow:24px 0 #26364a}.teacher-mouth{left:31px;top:55px}}
