@@ -568,6 +568,16 @@ window.MAJESTY_TOPICS = {
     "Basic nursing process",
     "Documentation and record keeping"
   ],
+  "SOC 101 — Introduction to Sociology": [
+    "Meaning, scope and methods of sociology",
+    "Culture, norms and values",
+    "Socialisation and social interaction",
+    "Social groups and institutions",
+    "Social stratification and inequality",
+    "Family, marriage and kinship",
+    "Social change and development",
+    "Social problems and social control"
+  ],
   "PHE 101 — Introduction to Public Health": [
     "Meaning and scope of public health",
     "Determinants of health",
