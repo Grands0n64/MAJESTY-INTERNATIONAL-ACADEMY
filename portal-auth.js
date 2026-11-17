@@ -82,7 +82,7 @@ $("generate-exam-practice").onclick=async()=>{
  try{
   const {data,error}=await client.functions.invoke("ai-tutor",{body:{subject,level,question:"Create an original "+exam+"-style practice paper for "+subject+" at "+level+" level. Include 15 multiple-choice questions with A-D options and 5 theory/short-answer questions. Vary difficulty, cover different syllabus topics, and include a separate answer key with brief explanations at the end. These must be original practice questions, not claimed to be official past questions."}});
   if(error)throw error;if(data?.error)throw new Error(data.error);
-  window.MAJESTY_CURRENT_EXAM={subject,exam,level,paper:data.answer,created_at:new Date().toISOString()};
+  const examCode={"WAEC revision":"WAEC","NECO revision":"NECO","JAMB practice":"JAMB","Common Entrance":"COMMON_ENTRANCE","School practice":"UNIVERSITY"}[exam]||"UNIVERSITY";const {error:saveError}=await client.from("exam_practice_attempts").insert({student_id:session.user.id,exam_type:examCode,subject,level,paper:data.answer});if(saveError)throw saveError;\n  window.MAJESTY_CURRENT_EXAM={subject,exam,level,paper:data.answer,created_at:new Date().toISOString()};
   $("ai-exam-paper").textContent=data.answer;
   $("exam-ai-feedback").textContent="Practice paper generated. Attempt the questions before requesting feedback.";
  }catch(e){$("exam-ai-feedback").textContent="Could not generate practice paper: "+(e.message||"Please try again.")}
