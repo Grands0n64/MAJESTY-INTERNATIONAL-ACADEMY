@@ -27,10 +27,10 @@ Deno.serve(async (req) => {
   if (authError || !user) return reply(401, { error: "Your session is invalid. Sign in again." });
 
   const apiKey = Deno.env.get("TAVUS_API_KEY");
-  const personaId = Deno.env.get("TAVUS_PERSONA_ID");
-  const replicaId = Deno.env.get("TAVUS_REPLICA_ID");
-  if (!apiKey || !personaId) {
-    return reply(503, { error: "Live video is not configured yet. Add TAVUS_API_KEY and TAVUS_PERSONA_ID to Supabase Edge Function secrets. Your existing Gemini key cannot create a live video avatar." });
+  const palId = Deno.env.get("TAVUS_PAL_ID");
+  const faceId = Deno.env.get("TAVUS_FACE_ID");
+  if (!apiKey || !palId) {
+    return reply(503, { error: "Live video is not configured yet. Add TAVUS_API_KEY and TAVUS_PAL_ID to Supabase Edge Function secrets. Your Gemini key alone cannot create a real-time video avatar." });
   }
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return reply(400, { error: "Invalid request body." }); }
@@ -63,14 +63,14 @@ Deno.serve(async (req) => {
     "Begin by greeting the student and starting the lesson on the selected topic.",
   ].join("\n");
   const payload: Record<string, unknown> = {
-    persona_id: personaId,
+    pal_id: palId,
     conversation_name: `Majesty lesson: ${subject} — ${topic}`.slice(0, 180),
     conversational_context: context,
     custom_greeting: `Hello! Welcome to Majesty International Academy. Today we are learning ${topic} in ${subject}. Are you ready to begin?`,
     audio_only: false,
     properties: { max_call_duration: 1800, participant_left_timeout: 60, enable_closed_captions: true },
   };
-  if (replicaId) payload.replica_id = replicaId;
+  if (faceId) payload.face_id = faceId;
   const response = await fetch("https://tavusapi.com/v2/conversations", {
     method: "POST",
     headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
