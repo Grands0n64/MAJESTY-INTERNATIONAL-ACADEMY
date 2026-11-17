@@ -36,7 +36,8 @@ Deno.serve(async (req) => {
   if ((!question && !imageBase64) || question.length > 4000) return reply(400, { error: "Enter a question or attach an image." });
   if (imageBase64 && (!["image/jpeg","image/png","image/webp"].includes(imageMime) || imageBase64.length > 7_000_000)) return reply(400, { error: "Use a JPEG, PNG or WebP image smaller than 5 MB." });
 
-  const model = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.8-flash";
+  const preferredModel = Deno.env.get("GEMINI_MODEL")?.trim() || "gemini-3.8-flash";
+  const models = [...new Set([preferredModel, "gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"])];
   const prompt = [
     "You are a patient, encouraging teacher at Majesty International Academy.",
     "Teach the learner; do not merely give answers. Explain step by step, define important terms, include a relevant example, then finish with one short check-for-understanding question.",
@@ -47,15 +48,36 @@ Deno.serve(async (req) => {
     `Learner question: ${question || "Please read and explain the attached question image."}`,
   ].join("\n\n");
 
-  const ai = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-    method: "POST",
-    headers: { "x-goog-api-key": geminiKey, "Content-Type": "application/json" },
-    body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }, ...(imageBase64 ? [{ inline_data: { mime_type: imageMime, data: imageBase64 } }] : [])] }], generationConfig: { maxOutputTokens: 1200 } }),
-  });
-  if (!ai.ok) {
-    const detail = await ai.text();
-    console.error("Gemini request failed", ai.status, detail.slice(0, 500));
-    return reply(502, { error: "The tutor service is temporarily unavailable. Check the Gemini model and API quota." });
+  let ai: Response | null = null;
+  let model = preferredModel;
+  let lastDetail = "";
+  for (const candidate of models) {
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${candidate}:generateContent`, {
+        method: "POST",
+        headers: { "x-goog-api-key": geminiKey, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }, ...(imageBase64 ? [{ inline_data: { mime_type: imageMime, data: imageBase64 } }] : [])] }],
+          generationConfig: { maxOutputTokens: 2400 },
+        }),
+      });
+      if (response.ok) { ai = response; model = candidate; break; }
+      lastDetail = await response.text();
+      console.error("Gemini request failed", candidate, response.status, lastDetail.slice(0, 700));
+      if (![400, 404, 429, 500, 502, 503].includes(response.status)) break;
+    } catch (error) {
+      lastDetail = String(error);
+      console.error("Gemini network request failed", candidate, lastDetail.slice(0, 500));
+    }
+  }
+  if (!ai) {
+    const lower = lastDetail.toLowerCase();
+    const message = lower.includes("api_key_invalid") || lower.includes("api key not valid") || lower.includes("invalid api key")
+      ? "Your Gemini API key is invalid. Update GEMINI_API_KEY in Supabase Edge Function secrets."
+      : lower.includes("quota") || lower.includes("resource_exhausted") || lower.includes("429")
+      ? "Your Gemini API quota has been reached. Check Google AI Studio usage and try again later."
+      : "The AI provider rejected the lesson request. Check the Gemini API key, model access and quota in Supabase secrets.";
+    return reply(502, { error: message });
   }
   const result = await ai.json();
   const answer = (result.candidates?.[0]?.content?.parts ?? [])
