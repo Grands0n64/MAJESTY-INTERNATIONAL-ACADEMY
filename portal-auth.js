@@ -18,7 +18,7 @@ async function loadProfile(s){
   }else say("Signed in. Your student profile is being prepared.");
 }
 function setSession(s){
-  session=s;const active=!!s;
+  session=s;const active=!!s;if(active)window.dispatchEvent(new Event("majesty-auth-ready"));
   signin.classList.toggle("hidden",active);signup.classList.toggle("hidden",active);google.classList.toggle("hidden",active);signout.classList.toggle("hidden",!active);
   ["auth-email","auth-password","auth-name","auth-level"].forEach(id=>$(id).classList.toggle("hidden",active));
   if(active){say("Signed in as "+(s.user.email||"student")+". Your secure student account is connected.");$("student-label").textContent=(s.user.email||"Student")+" · secure account";Promise.resolve().then(()=>loadProfile(s))}
