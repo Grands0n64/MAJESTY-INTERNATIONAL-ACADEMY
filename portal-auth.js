@@ -57,8 +57,22 @@ $("ask-assistant").addEventListener("click",async()=>{
   const question=$("assistant-question").value.trim();if(!question){$("assistant-answer").textContent="Type a question first.";return}
   const button=$("ask-assistant");button.disabled=true;$("assistant-answer").textContent="Your AI teacher is preparing an explanation…";
   try{const {data,error}=await client.functions.invoke("ai-tutor",{body:{question,subject:$("assistant-subject").value,level:$("level").value||"student"}});
-    if(error)throw error;if(data?.error)throw new Error(data.error);$("assistant-answer").textContent=data.answer||"No answer was returned.";
+    if(error)throw error;if(data?.error)throw new Error(data.error);$("assistant-answer").textContent=data.answer||"No answer was returned.";if($("class-lesson"))$("class-lesson").textContent=data.answer||"";if($("teacher-status"))$("teacher-status").textContent="Teaching session ready";if("speechSynthesis" in window){window.speechSynthesis.cancel();const speech=new SpeechSynthesisUtterance(data.answer||"");speech.rate=.94;speech.onstart=()=>{if($("speech-status"))$("speech-status").textContent="AI teacher is speaking…";if($("teacher-status"))$("teacher-status").textContent="Speaking to the class"};speech.onend=()=>{if($("speech-status"))$("speech-status").textContent="Lesson explanation finished";if($("teacher-status"))$("teacher-status").textContent="Ready for student questions"};window.speechSynthesis.speak(speech)}
   }catch(e){$("assistant-answer").textContent="The live tutor could not respond: "+(e.message||"Please try again.")}finally{button.disabled=false}
 });
-window.MAJESTY_AUTH={get client(){return client},get session(){return session}};
+
+$("generate-assignment").onclick=async()=>{
+ if(!client||!session){say("Sign in to generate an AI assignment.");return}
+ const subject=$("assignment-subject").value,topic=$("assignment-topic").selectedOptions[0]?.textContent||"Revision";
+ const button=$("generate-assignment");button.disabled=true;button.textContent="Preparing assignment…";
+ try{
+  const {data,error}=await client.functions.invoke("ai-tutor",{body:{subject,level:$("level").value||"student",question:"Create a fair, level-appropriate homework assignment on "+topic+" for "+subject+". Include a clear title, short instructions, 5 objective questions with four options each, 3 theory questions, and a marking guide at the end. Separate the student questions from the marking guide. Do not invent official exam questions."}});
+  if(error)throw error;if(data?.error)throw new Error(data.error);
+  window.MAJESTY_CURRENT_ASSIGNMENT={subject,topic,content:data.answer,created_at:new Date().toISOString()};
+  $("assignment-list").innerHTML='<div class="record"><b>AI assignment: '+subject+' — '+topic+'</b><pre class="answerbox">'+data.answer.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))+'</pre><small>Generated for practice. The marking guide is included for review after attempting the work.</small></div>';
+  $("assignment-feedback").textContent="Your AI assignment is ready. Complete your answers below.";
+ }catch(e){$("assignment-feedback").textContent="Could not generate assignment: "+(e.message||"Please try again.")}
+ finally{button.disabled=false;button.textContent="Set an AI assignment"}
+};
+\nwindow.MAJESTY_AUTH={get client(){return client},get session(){return session}};
 })();
