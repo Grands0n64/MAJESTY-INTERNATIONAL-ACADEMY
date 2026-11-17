@@ -55,6 +55,6 @@ window.addEventListener("blur",()=>addFlag("Exam window lost focus"));
 document.addEventListener("copy",()=>addFlag("Copy action detected"));
 document.addEventListener("paste",()=>addFlag("Paste action detected"));
 const originalStartQuiz=startQuiz;
-startQuiz=function(){examMonitoring=true;flags=[];$("proctor-status").textContent="Practice monitoring is active on this device."; $("proctor-log").innerHTML="";originalStartQuiz()};
+startQuiz=function(){examMonitoring=$("exam-monitor-consent").checked;flags=[];$("proctor-status").textContent=examMonitoring?"Practice monitoring is active on this device.":"Monitoring is off. You can still take the practice test."; $("proctor-log").innerHTML="";originalStartQuiz()};
 setupUniversityFilters();setProfile();renderAll();$("course-level").value=state.level||"JSS 1";$("course-level").onchange();$("quiz-subject").onchange=startQuiz;show("overview");
 })();
