@@ -1,7 +1,11 @@
 (()=>{"use strict";
 const $=id=>document.getElementById(id),status=$("auth-status"),signin=$("auth-signin"),signup=$("auth-signup"),signout=$("auth-signout"),google=$("auth-google");
 const url=window.MAJESTY_SUPABASE_URL,key=window.MAJESTY_SUPABASE_ANON_KEY;let client=null,session=null;
-function say(m){status.textContent=m}\nlet authMode="signin";\nfunction setMode(mode){authMode=mode;const registering=mode==="signup";$("auth-name").classList.toggle("hidden",!registering);$("auth-level").classList.toggle("hidden",!registering);signin.classList.toggle("hidden",registering);signup.classList.toggle("hidden",!registering);$("auth-toggle").textContent=registering?"Already have an account? Sign in":"New student? Create an account";$("auth-mode-label").textContent=registering?"Create your new student account.":"Welcome back. Sign in to your existing student account."; }\n$("auth-toggle").onclick=()=>setMode(authMode==="signin"?"signup":"signin");\nsetMode("signin");
+function say(m){status.textContent=m}
+let authMode="signin";
+function setMode(mode){authMode=mode;const registering=mode==="signup";$("auth-name").classList.toggle("hidden",!registering);$("auth-level").classList.toggle("hidden",!registering);signin.classList.toggle("hidden",registering);signup.classList.toggle("hidden",!registering);$("auth-toggle").textContent=registering?"Already have an account? Sign in":"New student? Create an account";$("auth-mode-label").textContent=registering?"Create your new student account.":"Welcome back. Sign in to your existing student account."; }
+$("auth-toggle").onclick=()=>setMode(authMode==="signin"?"signup":"signin");
+setMode("signin");
 function configured(){return url&&key&&!url.includes("YOUR_PROJECT")&&!key.includes("YOUR_SUPABASE")}
 if(!window.supabase||!configured())say("Supabase setup is incomplete. Check supabase-config.js.");
 else{client=window.supabase.createClient(url,key);client.auth.getSession().then(({data,error})=>{if(error)say(error.message);setSession(data?.session||null)});client.auth.onAuthStateChange((_event,s)=>{setSession(s)})}
@@ -15,7 +19,12 @@ async function loadProfile(s){
     $("auth-name").value=data.full_name||"";
     $("auth-level").value=data.level||"";
     $("save-profile").click();
-  }else {\n    const meta=s.user.user_metadata||{};\n    const {error:profileError}=await client.from("profiles").upsert({id:s.user.id,full_name:meta.full_name||"",level:meta.level||null},{onConflict:"id"});\n    if(profileError)say("Signed in, but profile setup failed: "+profileError.message);\n    else say("Signed in. Your student profile is ready.");\n  }
+  }else {
+    const meta=s.user.user_metadata||{};
+    const {error:profileError}=await client.from("profiles").upsert({id:s.user.id,full_name:meta.full_name||"",level:meta.level||null},{onConflict:"id"});
+    if(profileError)say("Signed in, but profile setup failed: "+profileError.message);
+    else say("Signed in. Your student profile is ready.");
+  }
 }
 function setSession(s){
   session=s;const active=!!s;if(active)window.dispatchEvent(new Event("majesty-auth-ready"));
@@ -74,7 +83,8 @@ $("generate-assignment").onclick=async()=>{
  }catch(e){$("assignment-feedback").textContent="Could not generate assignment: "+(e.message||"Please try again.")}
  finally{button.disabled=false;button.textContent="Set an AI assignment"}
 };
-\n
+
+
 $("generate-exam-practice").onclick=async()=>{
  if(!client||!session){say("Sign in to generate examination practice.");return}
  const subject=$("quiz-subject").value,exam=$("exam-type").value,level=$("level").value||"student";
@@ -82,7 +92,8 @@ $("generate-exam-practice").onclick=async()=>{
  try{
   const {data,error}=await client.functions.invoke("ai-tutor",{body:{subject,level,question:"Create an original "+exam+"-style practice paper for "+subject+" at "+level+" level. Include 15 multiple-choice questions with A-D options and 5 theory/short-answer questions. Vary difficulty, cover different syllabus topics, and include a separate answer key with brief explanations at the end. These must be original practice questions, not claimed to be official past questions."}});
   if(error)throw error;if(data?.error)throw new Error(data.error);
-  const examCode={"WAEC revision":"WAEC","NECO revision":"NECO","JAMB practice":"JAMB","Common Entrance":"COMMON_ENTRANCE","School practice":"UNIVERSITY"}[exam]||"UNIVERSITY";const {error:saveError}=await client.from("exam_practice_attempts").insert({student_id:session.user.id,exam_type:examCode,subject,level,paper:data.answer});if(saveError)throw saveError;\n  window.MAJESTY_CURRENT_EXAM={subject,exam,level,paper:data.answer,created_at:new Date().toISOString()};
+  const examCode={"WAEC revision":"WAEC","NECO revision":"NECO","JAMB practice":"JAMB","Common Entrance":"COMMON_ENTRANCE","School practice":"UNIVERSITY"}[exam]||"UNIVERSITY";const {error:saveError}=await client.from("exam_practice_attempts").insert({student_id:session.user.id,exam_type:examCode,subject,level,paper:data.answer});if(saveError)throw saveError;
+  window.MAJESTY_CURRENT_EXAM={subject,exam,level,paper:data.answer,created_at:new Date().toISOString()};
   $("ai-exam-paper").textContent=data.answer;
   $("exam-ai-feedback").textContent="Practice paper generated. Attempt the questions before requesting feedback.";
  }catch(e){$("exam-ai-feedback").textContent="Could not generate practice paper: "+(e.message||"Please try again.")}
@@ -101,5 +112,6 @@ $("review-exam-answer").onclick=async()=>{
  }catch(e){$("exam-ai-feedback").textContent="Could not review answers: "+(e.message||"Please try again.")}
  finally{button.disabled=false}
 };
-\nwindow.MAJESTY_AUTH={get client(){return client},get session(){return session}};
+
+window.MAJESTY_AUTH={get client(){return client},get session(){return session}};
 })();
