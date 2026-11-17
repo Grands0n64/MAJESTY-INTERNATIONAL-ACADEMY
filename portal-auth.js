@@ -74,5 +74,32 @@ $("generate-assignment").onclick=async()=>{
  }catch(e){$("assignment-feedback").textContent="Could not generate assignment: "+(e.message||"Please try again.")}
  finally{button.disabled=false;button.textContent="Set an AI assignment"}
 };
+\n
+$("generate-exam-practice").onclick=async()=>{
+ if(!client||!session){say("Sign in to generate examination practice.");return}
+ const subject=$("quiz-subject").value,exam=$("exam-type").value,level=$("level").value||"student";
+ const button=$("generate-exam-practice");button.disabled=true;button.textContent="Generating practice paper…";
+ try{
+  const {data,error}=await client.functions.invoke("ai-tutor",{body:{subject,level,question:"Create an original "+exam+"-style practice paper for "+subject+" at "+level+" level. Include 15 multiple-choice questions with A-D options and 5 theory/short-answer questions. Vary difficulty, cover different syllabus topics, and include a separate answer key with brief explanations at the end. These must be original practice questions, not claimed to be official past questions."}});
+  if(error)throw error;if(data?.error)throw new Error(data.error);
+  window.MAJESTY_CURRENT_EXAM={subject,exam,level,paper:data.answer,created_at:new Date().toISOString()};
+  $("ai-exam-paper").textContent=data.answer;
+  $("exam-ai-feedback").textContent="Practice paper generated. Attempt the questions before requesting feedback.";
+ }catch(e){$("exam-ai-feedback").textContent="Could not generate practice paper: "+(e.message||"Please try again.")}
+ finally{button.disabled=false;button.textContent="Generate WAEC / NECO / JAMB practice"}
+};
+$("review-exam-answer").onclick=async()=>{
+ if(!client||!session){say("Sign in to get AI marking feedback.");return}
+ const paper=window.MAJESTY_CURRENT_EXAM?.paper,answer=$("ai-exam-answer").value.trim();
+ if(!paper||!answer){$("exam-ai-feedback").textContent="Generate a practice paper and write your answers first.";return}
+ const button=$("review-exam-answer");button.disabled=true;$("exam-ai-feedback").textContent="Your answers are being reviewed…";
+ try{
+  const {data,error}=await client.functions.invoke("ai-tutor",{body:{subject:$("quiz-subject").value,level:$("level").value||"student",question:"Mark this student's answers against the practice paper. Explain each correction, identify strengths and gaps, and give a provisional score out of 100. Do not claim this is an official examination grade. Practice paper: "+paper+"\n\nStudent answers: "+answer}});
+  if(error)throw error;if(data?.error)throw new Error(data.error);
+  $("exam-ai-feedback").textContent=data.answer||"No feedback returned.";
+  const history=JSON.parse(localStorage.getItem("majestyExamPracticeHistory")||"[]");history.push({subject:$("quiz-subject").value,exam:$("exam-type").value,answer,feedback:data.answer,date:new Date().toISOString()});localStorage.setItem("majestyExamPracticeHistory",JSON.stringify(history));
+ }catch(e){$("exam-ai-feedback").textContent="Could not review answers: "+(e.message||"Please try again.")}
+ finally{button.disabled=false}
+};
 \nwindow.MAJESTY_AUTH={get client(){return client},get session(){return session}};
 })();
