@@ -1,7 +1,7 @@
 (()=>{"use strict";
 const $=id=>document.getElementById(id),status=$("auth-status"),signin=$("auth-signin"),signup=$("auth-signup"),signout=$("auth-signout"),google=$("auth-google");
 const url=window.MAJESTY_SUPABASE_URL,key=window.MAJESTY_SUPABASE_ANON_KEY;let client=null,session=null;
-function say(m){status.textContent=m}
+function say(m){status.textContent=m}\nlet authMode="signin";\nfunction setMode(mode){authMode=mode;const registering=mode==="signup";$("auth-name").classList.toggle("hidden",!registering);$("auth-level").classList.toggle("hidden",!registering);signin.classList.toggle("hidden",registering);signup.classList.toggle("hidden",!registering);$("auth-toggle").textContent=registering?"Already have an account? Sign in":"New student? Create an account";$("auth-mode-label").textContent=registering?"Create your new student account.":"Welcome back. Sign in to your existing student account."; }\n$("auth-toggle").onclick=()=>setMode(authMode==="signin"?"signup":"signin");\nsetMode("signin");
 function configured(){return url&&key&&!url.includes("YOUR_PROJECT")&&!key.includes("YOUR_SUPABASE")}
 if(!window.supabase||!configured())say("Supabase setup is incomplete. Check supabase-config.js.");
 else{client=window.supabase.createClient(url,key);client.auth.getSession().then(({data,error})=>{if(error)say(error.message);setSession(data?.session||null)});client.auth.onAuthStateChange((_event,s)=>{setSession(s)})}
@@ -15,7 +15,7 @@ async function loadProfile(s){
     $("auth-name").value=data.full_name||"";
     $("auth-level").value=data.level||"";
     $("save-profile").click();
-  }else say("Signed in. Your student profile is being prepared.");
+  }else {\n    const meta=s.user.user_metadata||{};\n    const {error:profileError}=await client.from("profiles").upsert({id:s.user.id,full_name:meta.full_name||"",level:meta.level||null},{onConflict:"id"});\n    if(profileError)say("Signed in, but profile setup failed: "+profileError.message);\n    else say("Signed in. Your student profile is ready.");\n  }
 }
 function setSession(s){
   session=s;const active=!!s;if(active)window.dispatchEvent(new Event("majesty-auth-ready"));
