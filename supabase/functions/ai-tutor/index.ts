@@ -26,12 +26,15 @@ Deno.serve(async (req) => {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return reply(401, { error: "Your session is invalid. Sign in again." });
 
-  let body: { question?: unknown; subject?: unknown; level?: unknown };
+  let body: { question?: unknown; subject?: unknown; level?: unknown; image_base64?: unknown; image_mime_type?: unknown };
   try { body = await req.json(); } catch { return reply(400, { error: "Invalid JSON body." }); }
   const question = typeof body.question === "string" ? body.question.trim() : "";
   const subject = typeof body.subject === "string" ? body.subject.trim().slice(0, 120) : "General studies";
   const level = typeof body.level === "string" ? body.level.trim().slice(0, 40) : "student";
-  if (!question || question.length > 4000) return reply(400, { error: "Enter a question of up to 4,000 characters." });
+  const imageBase64 = typeof body.image_base64 === "string" ? body.image_base64 : "";
+  const imageMime = typeof body.image_mime_type === "string" ? body.image_mime_type : "";
+  if ((!question && !imageBase64) || question.length > 4000) return reply(400, { error: "Enter a question or attach an image." });
+  if (imageBase64 && (!["image/jpeg","image/png","image/webp"].includes(imageMime) || imageBase64.length > 7_000_000)) return reply(400, { error: "Use a JPEG, PNG or WebP image smaller than 5 MB." });
 
   const model = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.8-flash";
   const prompt = [
@@ -41,13 +44,13 @@ Deno.serve(async (req) => {
     "Do not claim to know the learner's official curriculum or grades unless supplied.",
     `Learner level: ${level}`,
     `Subject: ${subject}`,
-    `Learner question: ${question}`,
+    `Learner question: ${question || "Please read and explain the attached question image."}`,
   ].join("\n\n");
 
   const ai = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
     headers: { "x-goog-api-key": geminiKey, "Content-Type": "application/json" },
-    body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 900 } }),
+    body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }, ...(imageBase64 ? [{ inline_data: { mime_type: imageMime, data: imageBase64 } }] : [])] }], generationConfig: { maxOutputTokens: 1200 } }),
   });
   if (!ai.ok) {
     const detail = await ai.text();
